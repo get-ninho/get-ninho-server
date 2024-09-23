@@ -3,6 +3,9 @@ import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
 
 export class UserDtoResponse {
   @ApiProperty()
+  id: number;
+
+  @ApiProperty()
   firstName: string;
 
   @ApiProperty()

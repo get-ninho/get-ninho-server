@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 
@@ -13,15 +14,23 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
 import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { UserDtoResponse } from '../dto/responses/user-dto.response';
+import { DatabaseErrorInterceptor } from 'src/common/errors/database-error.interceptor';
 
 @ApiTags('users')
+@UseInterceptors(DatabaseErrorInterceptor)
 @Controller('v1/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiResponse({
+    status: 201,
+    description: 'Create users',
+    type: UserDtoResponse,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
   @Post()
-  create(@Body() createUserDto: UserDtoRequest) {
-    return this.usersService.create(createUserDto);
+  create(@Body() dto: UserDtoRequest) {
+    return this.usersService.create(dto);
   }
 
   @ApiResponse({

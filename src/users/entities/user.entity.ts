@@ -12,10 +12,10 @@ export class User {
   @Column({ type: 'varchar', length: 50, name: 'last_name' })
   lastName: string;
 
-  @Column({ type: 'varchar', length: 14, name: 'cpf_cnpj' })
-  cpfCnp: string;
+  @Column({ type: 'varchar', length: 14, name: 'cpf_cnpj', unique: true })
+  cpfCnpj: string;
 
-  @Column({ type: 'varchar', length: 50 })
+  @Column({ type: 'varchar', length: 50, unique: true })
   email: string;
 
   @Column({ type: 'varchar' })
