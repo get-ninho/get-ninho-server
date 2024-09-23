@@ -33,8 +33,10 @@ export class UsersService {
     return this.mapResult(user);
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll(): Promise<UserDtoResponse[]> {
+    const users = await this.userRepository.find();
+
+    return users.map((user) => this.mapResult(user));
   }
 
   findOne(id: number) {
