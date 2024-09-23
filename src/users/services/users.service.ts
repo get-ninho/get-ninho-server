@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
+import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
+import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 
@@ -11,7 +11,7 @@ export class UsersService {
     private userRepository: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
+  create(createUserDto: UserDtoRequest) {
     return 'This action adds a new user';
   }
 
@@ -23,7 +23,7 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  update(id: number, updateUserDto: UpdateUserDtoRequest) {
     return `This action updates a #${id} user`;
   }
 
