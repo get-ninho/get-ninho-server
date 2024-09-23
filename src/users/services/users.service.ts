@@ -1,10 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpCode, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
 import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { UserDtoResponse } from '../dto/responses/user-dto.response';
+import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
+import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
 
 @Injectable()
 export class UsersService {
@@ -13,7 +15,9 @@ export class UsersService {
     private userRepository: Repository<User>,
   ) {}
 
-  async create(dto: UserDtoRequest): Promise<UserDtoResponse> {
+  async create(
+    dto: UserDtoRequest,
+  ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     const saltOrRounds = 10;
     const hashPass = await bcrypt.hash(dto.password, saltOrRounds);
 
@@ -30,17 +34,36 @@ export class UsersService {
     } as User;
 
     const user: User = await this.userRepository.save(newUser);
-    return this.mapResult(user);
+
+    return WrapperDtoResponse.of(
+      this.mapResult(user),
+      HttpStatus.CREATED,
+      getHttpStatusMessage(HttpStatus.CREATED),
+    );
   }
 
-  async findAll(): Promise<UserDtoResponse[]> {
+  async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
     const users = await this.userRepository.find();
 
-    return users.map((user) => this.mapResult(user));
+    if (users.length === 0) {
+      return WrapperDtoResponse.empty();
+    }
+
+    return WrapperDtoResponse.of(users.map((user) => this.mapResult(user)));
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number): Promise<WrapperDtoResponse<UserDtoResponse>> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.NOT_FOUND,
+        getHttpStatusMessage(HttpStatus.NOT_FOUND),
+        'Usuário não localizado.',
+      );
+    }
+
+    return WrapperDtoResponse.of(this.mapResult(user));
   }
 
   update(id: number, updateUserDto: UpdateUserDtoRequest) {

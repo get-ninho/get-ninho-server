@@ -5,11 +5,14 @@ import {
   CallHandler,
   BadRequestException,
   ConflictException,
+  HttpStatus,
 } from '@nestjs/common';
 import { catchError } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { QueryFailedError } from 'typeorm';
 import { DatabaseService } from 'src/database/database.service';
+import { WrapperDtoResponse } from '../helpers/wrapper-dto.response';
+import { getHttpStatusMessage } from '../helpers/http-status.mesage';
 
 @Injectable()
 export class DatabaseErrorInterceptor implements NestInterceptor {
@@ -29,7 +32,12 @@ export class DatabaseErrorInterceptor implements NestInterceptor {
             );
 
             throw new ConflictException(
-              `${fieldName} duplicado. Por favor, verifique os dados.`,
+              WrapperDtoResponse.of(
+                null,
+                HttpStatus.CONFLICT,
+                getHttpStatusMessage(HttpStatus.CONFLICT),
+                `${fieldName} duplicado. Por favor, verifique os dados.`,
+              ),
             );
           } else if (
             error.driverError &&
@@ -39,7 +47,12 @@ export class DatabaseErrorInterceptor implements NestInterceptor {
               error.driverError.sqlMessage,
             );
             throw new BadRequestException(
-              `O valor para a coluna ${columnName} excede o limite permitido. Por favor, verifique os dados.`,
+              WrapperDtoResponse.of(
+                null,
+                HttpStatus.BAD_REQUEST,
+                'Bad Request',
+                `O valor para a coluna ${columnName} excede o limite permitido. Por favor, verifique os dados.`,
+              ),
             );
           }
         }

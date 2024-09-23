@@ -15,6 +15,7 @@ import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
 import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { UserDtoResponse } from '../dto/responses/user-dto.response';
 import { DatabaseErrorInterceptor } from 'src/common/errors/database-error.interceptor';
+import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
 
 @ApiTags('users')
 @UseInterceptors(DatabaseErrorInterceptor)
@@ -29,7 +30,9 @@ export class UsersController {
   })
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @Post()
-  create(@Body() dto: UserDtoRequest) {
+  create(
+    @Body() dto: UserDtoRequest,
+  ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     return this.usersService.create(dto);
   }
 
@@ -40,12 +43,14 @@ export class UsersController {
   })
   @ApiResponse({ status: 204, description: 'Users not found' })
   @Get()
-  findAll() {
+  findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
     return this.usersService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(
+    @Param('id') id: string,
+  ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     return this.usersService.findOne(+id);
   }
 
