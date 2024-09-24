@@ -22,13 +22,28 @@ export class User {
   password: string;
 
   @Column({ type: 'varchar', nullable: true, name: 'image_url' })
-  imageUrl: string;
+  imageUrl?: string;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  bio: string;
+  bio?: string;
 
   @Column({ type: 'decimal', precision: 3, scale: 1 })
   rating: number;
+
+  @Column({ type: 'varchar', length: 2 })
+  state: string;
+
+  @Column({ type: 'varchar', length: 20 })
+  city: string;
+
+  @Column({ type: 'varchar', length: 50 })
+  address: string;
+
+  @Column({ type: 'integer' })
+  addressNumber: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  complement?: string;
 
   @Column({ type: 'enum', enum: UserRoleEnum })
   role: UserRoleEnum;

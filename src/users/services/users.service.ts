@@ -1,4 +1,4 @@
-import { HttpCode, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
 import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { Repository } from 'typeorm';
@@ -31,6 +31,11 @@ export class UsersService {
       password: hashPass,
       rating: dto.rating,
       role: dto.role,
+      address: dto.address,
+      city: dto.city,
+      state: dto.state,
+      addressNumber: dto.addressNumber,
+      complement: dto.complement,
     } as User;
 
     const user: User = await this.userRepository.save(newUser);
@@ -43,7 +48,7 @@ export class UsersService {
   }
 
   async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
-    const users = await this.userRepository.find();
+    const users: User[] = await this.userRepository.find();
 
     if (users.length === 0) {
       return WrapperDtoResponse.empty();
@@ -53,7 +58,7 @@ export class UsersService {
   }
 
   async findOne(id: number): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user: User = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
       return WrapperDtoResponse.emptyWithMetadata(
@@ -85,6 +90,11 @@ export class UsersService {
       bio: user.bio,
       imageUrl: user.imageUrl,
       rating: user.rating,
+      address: user.address,
+      city: user.city,
+      state: user.state,
+      addressNumber: user.addressNumber,
+      complement: user.complement,
     };
 
     return response;

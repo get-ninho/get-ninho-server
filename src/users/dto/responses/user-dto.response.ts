@@ -24,6 +24,21 @@ export class UserDtoResponse {
   bio?: string;
 
   @ApiProperty()
+  state: string;
+
+  @ApiProperty()
+  city: string;
+
+  @ApiProperty()
+  address: string;
+
+  @ApiProperty()
+  addressNumber: number;
+
+  @ApiProperty()
+  complement?: string;
+
+  @ApiProperty()
   rating?: number;
 
   @ApiProperty({
