@@ -6,6 +6,7 @@ const HttpStatusMessages = {
   [HttpStatus.OK]: 'OK',
   [HttpStatus.CREATED]: 'Created',
   [HttpStatus.CONFLICT]: 'Conflict',
+  [HttpStatus.NO_CONTENT]: 'No Content',
 };
 
 export const getHttpStatusMessage = (status: HttpStatus): string => {

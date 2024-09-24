@@ -59,8 +59,14 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
 
+  @ApiResponse({
+    status: 204,
+    description: 'Remove person',
+  })
+  @ApiResponse({ status: 404, description: 'Person not found.' })
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @Delete(':id')
+  remove(@Param('id') id: string): Promise<WrapperDtoResponse<void>> {
     return this.usersService.remove(+id);
   }
 }

@@ -75,8 +75,24 @@ export class UsersService {
     return `This action updates a #${id} user`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: number): Promise<WrapperDtoResponse<void>> {
+    const user: User = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.NOT_FOUND,
+        getHttpStatusMessage(HttpStatus.NOT_FOUND),
+        'Usuário não localizado.',
+      );
+    }
+
+    await this.userRepository.delete({ id: user.id });
+
+    return WrapperDtoResponse.emptyWithMetadata(
+      HttpStatus.NO_CONTENT,
+      getHttpStatusMessage(HttpStatus.NO_CONTENT),
+      null,
+    );
   }
 
   private mapResult(user: User): UserDtoResponse {
