@@ -15,7 +15,7 @@ export class UsersService {
     private userRepository: Repository<User>,
   ) {}
 
-  async create(
+  public async create(
     dto: UserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     const saltOrRounds = 10;
@@ -47,7 +47,7 @@ export class UsersService {
     );
   }
 
-  async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
+  public async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
     const users: User[] = await this.userRepository.find();
 
     if (users.length === 0) {
@@ -57,7 +57,9 @@ export class UsersService {
     return WrapperDtoResponse.of(users.map((user) => this.mapResult(user)));
   }
 
-  async findOne(id: number): Promise<WrapperDtoResponse<UserDtoResponse>> {
+  public async findOne(
+    id: number,
+  ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     const user: User = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
@@ -71,7 +73,7 @@ export class UsersService {
     return WrapperDtoResponse.of(this.mapResult(user));
   }
 
-  async update(
+  public async update(
     id: number,
     dto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
@@ -99,7 +101,7 @@ export class UsersService {
     return WrapperDtoResponse.of(this.mapResult(updatedUser));
   }
 
-  async remove(id: number): Promise<WrapperDtoResponse<void>> {
+  public async remove(id: number): Promise<WrapperDtoResponse<void>> {
     const user: User = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
@@ -117,6 +119,33 @@ export class UsersService {
       getHttpStatusMessage(HttpStatus.NO_CONTENT),
       null,
     );
+  }
+
+  public async getUserByEmail(
+    email: string,
+    password: string,
+  ): Promise<WrapperDtoResponse<User>> {
+    const user: User = await this.userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.UNAUTHORIZED,
+        getHttpStatusMessage(HttpStatus.UNAUTHORIZED),
+        'E-mail ou senha inválido.',
+      );
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.UNAUTHORIZED,
+        getHttpStatusMessage(HttpStatus.UNAUTHORIZED),
+        'E-mail ou senha inválido.',
+      );
+    }
+
+    return WrapperDtoResponse.of(user);
   }
 
   private mapResult(user: User): UserDtoResponse {

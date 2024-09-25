@@ -7,6 +7,7 @@ const HttpStatusMessages = {
   [HttpStatus.CREATED]: 'Created',
   [HttpStatus.CONFLICT]: 'Conflict',
   [HttpStatus.NO_CONTENT]: 'No Content',
+  [HttpStatus.UNAUTHORIZED]: 'Unauthorized',
 };
 
 export const getHttpStatusMessage = (status: HttpStatus): string => {
