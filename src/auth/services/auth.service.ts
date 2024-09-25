@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
 import { UserLoginDtoResponse } from 'src/users/dto/responses/login-user.response';
@@ -11,7 +11,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(
+  public async login(
     email: string,
     password: string,
   ): Promise<WrapperDtoResponse<UserLoginDtoResponse>> {
@@ -40,5 +40,13 @@ export class AuthService {
     };
 
     return WrapperDtoResponse.of(response);
+  }
+
+  public checkToken(token: string) {
+    try {
+      return this.jwtService.verify(token);
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
   }
 }

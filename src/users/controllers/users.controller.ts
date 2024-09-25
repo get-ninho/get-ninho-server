@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 
@@ -16,6 +17,8 @@ import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { UserDtoResponse } from '../dto/responses/user-dto.response';
 import { DatabaseErrorInterceptor } from 'src/common/errors/database-error.interceptor';
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { IsPrestador } from 'src/common/decorators/prestador.decorator';
 
 @ApiTags('users')
 @UseInterceptors(DatabaseErrorInterceptor)
@@ -47,17 +50,18 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @UseGuards(AuthGuard)
   @ApiResponse({
     status: 200,
     description: 'Search user by id',
     type: UserDtoResponse,
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Get(':id')
+  @Get('/find')
   findOne(
-    @Param('id') id: string,
+    @IsPrestador() user: UserDtoResponse,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    return this.usersService.findOne(+id);
+    return this.usersService.findOne(user.id);
   }
 
   @ApiResponse({

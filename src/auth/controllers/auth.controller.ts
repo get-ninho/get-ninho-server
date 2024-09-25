@@ -10,11 +10,13 @@ import { AuthService } from '../services/auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post()
   @ApiResponse({
     status: 201,
-    description: 'Login',
+    description: 'Return Jwt token',
+    type: String,
   })
-  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
   @Post('/signin')
   login(
     @Body() dto: UserLoginDtoRequest,
