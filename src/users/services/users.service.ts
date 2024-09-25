@@ -71,8 +71,32 @@ export class UsersService {
     return WrapperDtoResponse.of(this.mapResult(user));
   }
 
-  update(id: number, updateUserDto: UpdateUserDtoRequest) {
-    return `This action updates a #${id} user`;
+  async update(
+    id: number,
+    dto: UpdateUserDtoRequest,
+  ): Promise<WrapperDtoResponse<UserDtoResponse>> {
+    const user: User = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.NOT_FOUND,
+        getHttpStatusMessage(HttpStatus.NOT_FOUND),
+        'Usuário não localizado.',
+      );
+    }
+
+    if (dto.password) {
+      const saltOrRounds = 10;
+      dto.password = await bcrypt.hash(dto.password, saltOrRounds);
+    } else {
+      dto.password = user.password;
+    }
+
+    await this.userRepository.update({ id }, dto);
+
+    const updatedUser = await this.userRepository.findOne({ where: { id } });
+
+    return WrapperDtoResponse.of(this.mapResult(updatedUser));
   }
 
   async remove(id: number): Promise<WrapperDtoResponse<void>> {

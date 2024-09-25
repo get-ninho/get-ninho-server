@@ -47,6 +47,12 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Search user by id',
+    type: UserDtoResponse,
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
   @Get(':id')
   findOne(
     @Param('id') id: string,
@@ -54,8 +60,18 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Update user',
+    type: UserDtoResponse,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @ApiResponse({ status: 404, description: 'Users not found' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDtoRequest) {
+  update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDtoRequest,
+  ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     return this.usersService.update(+id, updateUserDto);
   }
 
