@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { UserRoleEnum } from '../common/enums/user-role.enum';
+import { Job } from 'src/jobs/entities/job.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -47,4 +48,7 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRoleEnum })
   role: UserRoleEnum;
+
+  @OneToMany(() => Job, (job) => job.user) // Relação ajustada
+  jobs: Job[];
 }
