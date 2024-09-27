@@ -1,26 +1,121 @@
-import { Injectable } from '@nestjs/common';
-import { CreateJobDto } from '../dto/requests/create-job.dto';
-import { UpdateJobDto } from '../dto/requests/update-job.dto';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+
+import { Repository } from 'typeorm';
+import { Job } from '../entities/job.entity';
+import { JobDtoRequest } from '../dto/requests/create-job-dto.request';
+import { UpdateJobDtoRequest } from '../dto/requests/update-job-dto.request';
+import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
+import { JobDtoResponse } from '../dto/responses/job-dto.response';
+import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
+import { UserDtoResponse } from 'src/users/dto/responses/user-dto.response';
+import { UsersService } from 'src/users/services/users.service';
 
 @Injectable()
 export class JobsService {
-  create(createJobDto: CreateJobDto) {
-    return 'This action adds a new job';
+  constructor(
+    @Inject('JOB_REPOSITORY')
+    private readonly jobRepository: Repository<Job>,
+    private readonly userService: UsersService,
+  ) {}
+
+  async create(
+    dto: JobDtoRequest,
+    professional: UserDtoResponse,
+  ): Promise<WrapperDtoResponse<JobDtoResponse>> {
+    const professionalReponse = await this.userService.findOne(professional.id);
+
+    const job: Job = {
+      category: dto.category,
+      description: dto.description,
+      total: dto.total,
+      user: professionalReponse.data,
+    } as Job;
+
+    const response: Job = await this.jobRepository.save(job);
+
+    return WrapperDtoResponse.of(
+      this.mapper(response),
+      HttpStatus.CREATED,
+      getHttpStatusMessage(HttpStatus.CREATED),
+    );
   }
 
-  findAll() {
-    return `This action returns all jobs`;
+  async findAll(userId: number): Promise<WrapperDtoResponse<JobDtoResponse[]>> {
+    const response: Job[] = await this.jobRepository.find({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
+
+    if (response.length === 0) {
+      return WrapperDtoResponse.empty();
+    }
+
+    return WrapperDtoResponse.of(response.map((job) => this.mapper(job)));
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} job`;
+  async findOne(
+    userId: number,
+    id: number,
+  ): Promise<WrapperDtoResponse<JobDtoResponse>> {
+    const response: Job = await this.jobRepository.findOne({
+      where: {
+        id,
+        user: {
+          id: userId,
+        },
+      },
+    });
+
+    if (!response) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.NOT_FOUND,
+        getHttpStatusMessage(HttpStatus.NOT_FOUND),
+        'Usuário não localizado.',
+      );
+    }
+
+    return WrapperDtoResponse.of(this.mapper(response));
   }
 
-  update(id: number, updateJobDto: UpdateJobDto) {
+  update(id: number, updateJobDto: UpdateJobDtoRequest) {
     return `This action updates a #${id} job`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} job`;
+  async remove(
+    user: UserDtoResponse,
+    id: number,
+  ): Promise<WrapperDtoResponse<void>> {
+    const job = await this.jobRepository.findOne({ where: { id } });
+
+    if (user.id !== job.user.id) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.FORBIDDEN,
+        getHttpStatusMessage(HttpStatus.FORBIDDEN),
+        'Usuário sem permissão para efetuar está tarefa.',
+      );
+    }
+
+    await this.jobRepository.delete({ id: job.id });
+
+    return WrapperDtoResponse.emptyWithMetadata(
+      HttpStatus.NO_CONTENT,
+      getHttpStatusMessage(HttpStatus.NO_CONTENT),
+      null,
+    );
+  }
+
+  private mapper(job: Job): JobDtoResponse {
+    const response: JobDtoResponse = {
+      category: job.category,
+      description: job.description,
+      id: job.id,
+      profisional: job.user,
+      total: job.total,
+    };
+
+    return response;
   }
 }

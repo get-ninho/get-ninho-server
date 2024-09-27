@@ -8,6 +8,7 @@ const HttpStatusMessages = {
   [HttpStatus.CONFLICT]: 'Conflict',
   [HttpStatus.NO_CONTENT]: 'No Content',
   [HttpStatus.UNAUTHORIZED]: 'Unauthorized',
+  [HttpStatus.FORBIDDEN]: 'Forbidden',
 };
 
 export const getHttpStatusMessage = (status: HttpStatus): string => {

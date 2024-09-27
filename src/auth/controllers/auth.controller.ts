@@ -10,7 +10,6 @@ import { AuthService } from '../services/auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
   @ApiResponse({
     status: 201,
     description: 'Return Jwt token',

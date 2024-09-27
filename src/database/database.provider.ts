@@ -15,7 +15,7 @@ export const databaseProviders = [
         synchronize: true,
         extra: {
           connectionLimit: 10,
-          connectTimeout: 1000,
+          connectTimeout: 10000,
         },
       });
 
