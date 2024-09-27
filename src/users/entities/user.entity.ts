@@ -28,8 +28,8 @@ export class User {
   @Column({ type: 'varchar', length: 500, nullable: true })
   bio?: string;
 
-  @Column({ type: 'decimal', precision: 3, scale: 1 })
-  rating: number;
+  @Column({ type: 'decimal', precision: 3, scale: 1, nullable: true })
+  rating?: number;
 
   @Column({ type: 'varchar', length: 2 })
   state: string;
@@ -49,6 +49,6 @@ export class User {
   @Column({ type: 'enum', enum: UserRoleEnum })
   role: UserRoleEnum;
 
-  @OneToMany(() => Job, (job) => job.user) // Relação ajustada
+  @OneToMany(() => Job, (job) => job.user)
   jobs: Job[];
 }

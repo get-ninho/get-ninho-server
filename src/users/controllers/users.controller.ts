@@ -4,10 +4,11 @@ import {
   Post,
   Body,
   Patch,
-  Param,
   Delete,
   UseInterceptors,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 
@@ -64,6 +65,7 @@ export class UsersController {
     return this.usersService.findOne(user.id);
   }
 
+  @UseGuards(AuthGuard)
   @ApiResponse({
     status: 200,
     description: 'Update user',
@@ -71,22 +73,25 @@ export class UsersController {
   })
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @ApiResponse({ status: 404, description: 'Users not found' })
-  @Patch(':id')
+  @Patch()
   update(
-    @Param('id') id: string,
+    @IsPrestador() user: UserDtoResponse,
     @Body() updateUserDto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    return this.usersService.update(+id, updateUserDto);
+    return this.usersService.update(user.id, updateUserDto);
   }
 
+  @UseGuards(AuthGuard)
   @ApiResponse({
     status: 204,
     description: 'Remove person',
   })
   @ApiResponse({ status: 404, description: 'Person not found.' })
-  @Delete(':id')
-  @Delete(':id')
-  remove(@Param('id') id: string): Promise<WrapperDtoResponse<void>> {
-    return this.usersService.remove(+id);
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @IsPrestador() user: UserDtoResponse,
+  ): Promise<WrapperDtoResponse<void>> {
+    return this.usersService.remove(user.id);
   }
 }

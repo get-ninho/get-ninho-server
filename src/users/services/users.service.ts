@@ -18,6 +18,18 @@ export class UsersService {
   public async create(
     dto: UserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
+    const documentExists = await this.userRepository.findOne({
+      where: { cpfCnpj: dto.cpfCnpj },
+    });
+
+    if (documentExists) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.CONFLICT,
+        getHttpStatusMessage(HttpStatus.CONFLICT),
+        'Cpf ou cnpj já cadastrado.',
+      );
+    }
+
     const saltOrRounds = 10;
     const hashPass = await bcrypt.hash(dto.password, saltOrRounds);
 
@@ -77,6 +89,15 @@ export class UsersService {
     id: number,
     dto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
+    if (dto.cpfCnpj) {
+      return WrapperDtoResponse.emptyWithMetadata(
+        HttpStatus.BAD_REQUEST,
+        getHttpStatusMessage(HttpStatus.BAD_REQUEST),
+        'Usuário não pode alterar o cpf/cnpj.',
+      );
+    }
+
+    // Busca o usuário atual
     const user: User = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
@@ -89,12 +110,14 @@ export class UsersService {
 
     if (dto.password) {
       const saltOrRounds = 10;
-      dto.password = await bcrypt.hash(dto.password, saltOrRounds);
-    } else {
-      dto.password = user.password;
+      user.password = await bcrypt.hash(dto.password, saltOrRounds);
     }
 
-    await this.userRepository.update({ id }, dto);
+    if (dto.firstName) {
+      user.firstName = dto.firstName;
+    }
+
+    await this.userRepository.save(user);
 
     const updatedUser = await this.userRepository.findOne({ where: { id } });
 
