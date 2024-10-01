@@ -78,8 +78,6 @@ export class OrdersService {
       images: [],
     } as ServiceOrder;
 
-    console.log({ orderCreate: order });
-
     const savedOrder: ServiceOrder = await this.orderRepository.save(order);
 
     if (files.length > 0) {
