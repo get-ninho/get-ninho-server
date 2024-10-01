@@ -13,6 +13,8 @@ import { UpdateUserDtoRequest } from 'src/users/dto/requests/update-user-dto.req
 import { EvaluationDtoResponse } from '../dto/responses/evaluation.dto.response';
 import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
 import * as moment from 'moment-timezone';
+import { MetadataDtoResponse } from 'src/common/helpers/metadata-dto.response';
+import { BusinessException } from 'src/common/errors/business-exception.error';
 
 @Injectable()
 export class EvaluationService {
@@ -30,30 +32,24 @@ export class EvaluationService {
       await this.userService.findOne(dto.professionalId);
 
     if (!professional.data) {
-      return WrapperDtoResponse.emptyWithMetadata(
-        professional.metadata.status,
-        professional.metadata.statusText,
-        professional.metadata.message,
-      );
+      throw new BusinessException(professional.metadata);
     }
 
     if (customer.data.id === dto.professionalId) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.CONFLICT,
         getHttpStatusMessage(HttpStatus.CONFLICT),
         'O profissional não pode se auto avaliar.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     const job: WrapperDtoResponse<JobDtoResponse> =
       await this.jobService.findOne(dto.professionalId, dto.jobId);
 
     if (!job.data) {
-      return WrapperDtoResponse.emptyWithMetadata(
-        job.metadata.status,
-        job.metadata.statusText,
-        job.metadata.message,
-      );
+      throw new BusinessException(job.metadata);
     }
 
     const averageRating = await this.calculateAverageRating(
@@ -100,14 +96,15 @@ export class EvaluationService {
     dto: UpdateEvaluationDto,
   ): Promise<WrapperDtoResponse<EvaluationDtoResponse>> {
     if (dto.professionalId || dto.jobId) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.BAD_REQUEST,
         getHttpStatusMessage(HttpStatus.BAD_REQUEST),
         'Não é permitido alterar o prestador ou o serviço prestado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
-    // Adiciona o campo updated_at à atualização
     const updatedEvaluation = await this.evaluationModel.findOneAndUpdate(
       {
         _id: id,
@@ -125,11 +122,13 @@ export class EvaluationService {
     );
 
     if (!updatedEvaluation) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
         'Avaliação não localizada ou você não possui permissão para alterá-la.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     const averageRating = await this.calculateAverageRating(
@@ -159,11 +158,12 @@ export class EvaluationService {
     });
 
     if (!deleteEvaluation) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
         'Avaliação não localizada ou você não possui permissão para exluí-la.',
       );
+      throw new BusinessException(metadata);
     }
 
     const averageRating = await this.calculateAverageRating(

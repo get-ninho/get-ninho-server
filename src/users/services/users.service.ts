@@ -10,6 +10,8 @@ import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
 import * as moment from 'moment-timezone';
 import { UserRoleEnum } from '../common/enums/user-role.enum';
 import { Role } from '../entities/role.entity';
+import { MetadataDtoResponse } from 'src/common/helpers/metadata-dto.response';
+import { BusinessException } from 'src/common/errors/business-exception.error';
 
 @Injectable()
 export class UsersService {
@@ -29,11 +31,13 @@ export class UsersService {
     });
 
     if (documentExists) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.CONFLICT,
         getHttpStatusMessage(HttpStatus.CONFLICT),
         'Cpf ou cnpj já cadastrado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     const saltOrRounds = 10;
@@ -98,11 +102,13 @@ export class UsersService {
     });
 
     if (!user) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
         'Usuário não localizado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     return WrapperDtoResponse.of(this.mapResult(user));
@@ -113,11 +119,13 @@ export class UsersService {
     dto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
     if (dto.cpfCnpj) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.BAD_REQUEST,
         getHttpStatusMessage(HttpStatus.BAD_REQUEST),
         'Usuário não pode alterar o cpf/cnpj.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     const user: User = await this.userRepository.findOne({
@@ -126,11 +134,13 @@ export class UsersService {
     });
 
     if (!user) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
         'Usuário não localizado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     if (dto.password) {
@@ -157,11 +167,13 @@ export class UsersService {
     });
 
     if (!user) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
         'Usuário não localizado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     await this.userRepository.delete({ id: user.id });
@@ -183,21 +195,25 @@ export class UsersService {
     });
 
     if (!user) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.UNAUTHORIZED,
         getHttpStatusMessage(HttpStatus.UNAUTHORIZED),
         'E-mail ou senha inválido.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.UNAUTHORIZED,
         getHttpStatusMessage(HttpStatus.UNAUTHORIZED),
         'E-mail ou senha inválido.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     return WrapperDtoResponse.of(user);

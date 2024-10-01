@@ -3,7 +3,6 @@ import {
   CanActivate,
   ExecutionContext,
   HttpStatus,
-  HttpException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
@@ -11,6 +10,8 @@ import { ROLES_KEY } from '../decorators/role.decorator';
 import { WrapperDtoResponse } from '../helpers/wrapper-dto.response';
 import { getHttpStatusMessage } from '../helpers/http-status.mesage';
 import { UserDtoResponse } from 'src/users/dto/responses/user-dto.response';
+import { MetadataDtoResponse } from '../helpers/metadata-dto.response';
+import { BusinessException } from '../errors/business-exception.error';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -30,14 +31,13 @@ export class RolesGuard implements CanActivate {
     const user: WrapperDtoResponse<UserDtoResponse> = request?.prestador;
 
     if (!user) {
-      throw new HttpException(
-        WrapperDtoResponse.emptyWithMetadata(
-          HttpStatus.UNAUTHORIZED,
-          getHttpStatusMessage(HttpStatus.UNAUTHORIZED),
-          'Usuário não autenticado.',
-        ),
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.UNAUTHORIZED,
+        getHttpStatusMessage(HttpStatus.UNAUTHORIZED),
+        'Usuário não autenticado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     const hasRole = requiredRoles.some((role) => {
@@ -45,14 +45,13 @@ export class RolesGuard implements CanActivate {
     });
 
     if (!hasRole) {
-      throw new HttpException(
-        WrapperDtoResponse.emptyWithMetadata(
-          HttpStatus.FORBIDDEN,
-          getHttpStatusMessage(HttpStatus.FORBIDDEN),
-          'Usuário não tem permissão para esta funcionalidade.',
-        ),
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.FORBIDDEN,
+        getHttpStatusMessage(HttpStatus.FORBIDDEN),
+        'Usuário não tem permissão para esta funcionalidade.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     return true;

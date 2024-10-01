@@ -10,6 +10,8 @@ import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
 import { UserDtoResponse } from 'src/users/dto/responses/user-dto.response';
 import { UsersService } from 'src/users/services/users.service';
 import { User } from 'src/users/entities/user.entity';
+import { MetadataDtoResponse } from 'src/common/helpers/metadata-dto.response';
+import { BusinessException } from 'src/common/errors/business-exception.error';
 
 @Injectable()
 export class JobsService {
@@ -77,11 +79,13 @@ export class JobsService {
     });
 
     if (!response) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
         'Trabalho não localizado.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     return WrapperDtoResponse.of(this.mapper(response));
@@ -101,11 +105,13 @@ export class JobsService {
     });
 
     if (user.id !== job.user.id) {
-      return WrapperDtoResponse.emptyWithMetadata(
+      const metadata = MetadataDtoResponse.of(
         HttpStatus.FORBIDDEN,
         getHttpStatusMessage(HttpStatus.FORBIDDEN),
         'Usuário sem permissão para efetuar está tarefa.',
       );
+
+      throw new BusinessException(metadata);
     }
 
     await this.jobRepository.delete({ id: job.id });
