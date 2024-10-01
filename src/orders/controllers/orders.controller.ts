@@ -14,7 +14,7 @@ import { OrdersService } from '../services/orders.service';
 import { OrderDtoRequest } from '../dto/requests/create-order.dto.request';
 import { UpdateOrderDto } from '../dto/requests/update-order.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { IsCustomer } from 'src/common/decorators/customer.decorator';
 import { UserDtoResponse } from 'src/users/dto/responses/user-dto.response';
@@ -27,6 +27,12 @@ import { OrderDtoResponse } from '../dto/responses/order.dto.response';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @ApiResponse({
+    status: 201,
+    description: 'Created service orders',
+    type: OrderDtoResponse,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
   @UseInterceptors(FilesInterceptor('images', 8))
   @Post()
   create(
@@ -37,9 +43,17 @@ export class OrdersController {
     return this.ordersService.create(user, dto, files);
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Search all service orders',
+    type: OrderDtoResponse,
+  })
+  @ApiResponse({ status: 204, description: 'Service orders not found' })
   @Get()
-  findAll() {
-    return this.ordersService.findAll();
+  findAll(
+    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
+  ): Promise<WrapperDtoResponse<OrderDtoResponse[]>> {
+    return this.ordersService.findAll(user);
   }
 
   @Get(':id')

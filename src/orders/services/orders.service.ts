@@ -21,6 +21,7 @@ import { OrderStatusEnum } from '../common/enums/order-status.enum';
 import { PaymentStatusEnum } from '../common/enums/payment-status.enum';
 import { Job } from 'src/jobs/entities/job.entity';
 import { User } from 'src/users/entities/user.entity';
+import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
 
 @Injectable()
 export class OrdersService {
@@ -108,8 +109,40 @@ export class OrdersService {
     return WrapperDtoResponse.of(this.mapResult(completeOrder));
   }
 
-  findAll() {
-    return `This action returns all orders`;
+  async findAll(
+    user: WrapperDtoResponse<UserDtoResponse>,
+  ): Promise<WrapperDtoResponse<OrderDtoResponse[]>> {
+    if (user.data.roles.includes(UserRoleEnum.PRESTADOR)) {
+      const orders: ServiceOrder[] = await this.orderRepository.find({
+        where: {
+          professional: {
+            id: user.data.id,
+          },
+        },
+      });
+
+      return WrapperDtoResponse.of(
+        orders.map((order) => this.mapResult(order)),
+      );
+    } else {
+      const orders: ServiceOrder[] = await this.orderRepository.find({
+        where: {
+          customer: {
+            id: user.data.id,
+          },
+        },
+        relations: {
+          customer: true,
+          job: true,
+          images: true,
+          professional: true,
+        },
+      });
+
+      return WrapperDtoResponse.of(
+        orders.map((order) => this.mapResult(order)),
+      );
+    }
   }
 
   findOne(id: number) {
