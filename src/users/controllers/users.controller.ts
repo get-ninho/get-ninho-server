@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UploadedFile,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 
@@ -20,6 +21,7 @@ import { DatabaseErrorInterceptor } from 'src/common/errors/database-error.inter
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { IsPrestador } from 'src/common/decorators/prestador.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('users')
 @UseInterceptors(DatabaseErrorInterceptor)
@@ -33,11 +35,13 @@ export class UsersController {
     type: UserDtoResponse,
   })
   @ApiResponse({ status: 400, description: 'Invalid request' })
+  @UseInterceptors(FileInterceptor('image'))
   @Post()
-  create(
+  async create(
+    @UploadedFile() image: Express.Multer.File,
     @Body() dto: UserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    return this.usersService.create(dto);
+    return this.usersService.create(dto, image);
   }
 
   @ApiResponse({
@@ -73,12 +77,14 @@ export class UsersController {
   })
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @ApiResponse({ status: 404, description: 'Users not found' })
+  @UseInterceptors(FileInterceptor('image'))
   @Patch()
   update(
     @IsPrestador() user: UserDtoResponse,
+    @UploadedFile() image: Express.Multer.File,
     @Body() updateUserDto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    return this.usersService.update(user.id, updateUserDto);
+    return this.usersService.update(user.id, updateUserDto, image);
   }
 
   @UseGuards(AuthGuard)

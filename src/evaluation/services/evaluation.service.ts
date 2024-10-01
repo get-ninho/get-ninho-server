@@ -61,7 +61,11 @@ export class EvaluationService {
       rating: averageRating,
     };
 
-    await this.userService.update(professional.data.id, updateRating);
+    await this.userService.update(
+      professional.data.id,
+      updateRating,
+      undefined,
+    );
 
     const evaluation = new this.evaluationModel({
       customer_id: customer.data.id,
@@ -143,6 +147,7 @@ export class EvaluationService {
     await this.userService.update(
       updatedEvaluation.professional_id,
       updateRating,
+      undefined,
     );
 
     return WrapperDtoResponse.of(this.mapper(updatedEvaluation));
@@ -178,6 +183,7 @@ export class EvaluationService {
     await this.userService.update(
       deleteEvaluation.professional_id,
       updateRating,
+      undefined,
     );
     return WrapperDtoResponse.emptyWithMetadata(
       HttpStatus.NO_CONTENT,

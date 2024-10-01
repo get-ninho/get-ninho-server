@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Job } from 'src/jobs/entities/job.entity';
 import { Role } from './role.entity';
+import { ServiceOrder } from 'src/orders/entities/order.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -64,4 +65,10 @@ export class User {
 
   @OneToMany(() => Job, (job) => job.user)
   jobs: Job[];
+
+  @OneToMany(() => ServiceOrder, (serviceOrder) => serviceOrder.customer)
+  serviceOrdersAsCustomer: ServiceOrder[];
+
+  @OneToMany(() => ServiceOrder, (serviceOrder) => serviceOrder.professional)
+  serviceOrdersAsProfessional: ServiceOrder[];
 }

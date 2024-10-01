@@ -1,6 +1,13 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { CategoryEnum } from '../common/enums/category.enum';
 import { User } from 'src/users/entities/user.entity';
+import { ServiceOrder } from 'src/orders/entities/order.entity';
 
 @Entity({ name: 'jobs' })
 export class Job {
@@ -18,4 +25,7 @@ export class Job {
 
   @ManyToOne(() => User, (user) => user.jobs)
   user: User;
+
+  @OneToMany(() => ServiceOrder, (order) => order.job)
+  serviceOrders: ServiceOrder[];
 }

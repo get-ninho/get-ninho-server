@@ -52,9 +52,9 @@ export class UserDtoRequest {
   address: string;
 
   @IsNotEmpty({ message: 'Numero do endereço obrigatória' })
-  @IsNumber({}, { message: 'Formato do numero do endereço nota inválido' })
+  @IsString({ message: 'Formato do numero do endereço inválido' })
   @ApiProperty()
-  addressNumber: number;
+  addressNumber: string;
 
   @IsOptional()
   @IsString({ message: 'Formato do campo complemento inválido' })
