@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   UploadedFile,
+  Param,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 
@@ -20,8 +21,8 @@ import { UserDtoResponse } from '../dto/responses/user-dto.response';
 import { DatabaseErrorInterceptor } from 'src/common/errors/database-error.interceptor';
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
 import { AuthGuard } from 'src/common/guards/auth.guard';
-import { IsPrestador } from 'src/common/decorators/prestador.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { IsCustomer } from 'src/common/decorators/customer.decorator';
 
 @ApiTags('users')
 @UseInterceptors(DatabaseErrorInterceptor)
@@ -62,11 +63,11 @@ export class UsersController {
     type: UserDtoResponse,
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Get('/find')
+  @Get(':id')
   findOne(
-    @IsPrestador() user: UserDtoResponse,
+    @Param('id') id: string,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    return this.usersService.findOne(user.id);
+    return this.usersService.findOne(+id);
   }
 
   @UseGuards(AuthGuard)
@@ -80,7 +81,7 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('image'))
   @Patch()
   update(
-    @IsPrestador() user: UserDtoResponse,
+    @IsCustomer() user: UserDtoResponse,
     @UploadedFile() image: Express.Multer.File,
     @Body() updateUserDto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
@@ -96,7 +97,7 @@ export class UsersController {
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
-    @IsPrestador() user: UserDtoResponse,
+    @IsCustomer() user: UserDtoResponse,
   ): Promise<WrapperDtoResponse<void>> {
     return this.usersService.remove(user.id);
   }
