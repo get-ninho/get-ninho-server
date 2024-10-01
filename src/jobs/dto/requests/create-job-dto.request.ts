@@ -1,12 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { CategoryEnum } from 'src/jobs/common/enums/category.enum';
-import { User } from 'src/users/entities/user.entity';
 
 export class JobDtoRequest {
-  @ApiProperty({ type: () => User })
-  profisional: User;
-
   @IsNotEmpty({ message: 'Descrição obrigatória' })
   @IsString({ message: 'Formato do campo descrição inválido' })
   @ApiProperty()

@@ -41,9 +41,15 @@ export class UserDtoResponse {
   @ApiProperty()
   rating?: number;
 
+  @ApiProperty()
+  createdAt: string;
+
+  @ApiProperty()
+  updatedAt: string;
+
   @ApiProperty({
     enum: UserRoleEnum,
     examples: Object.keys(UserRoleEnum),
   })
-  role: UserRoleEnum;
+  roles: UserRoleEnum[];
 }

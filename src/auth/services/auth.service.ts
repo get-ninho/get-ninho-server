@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
+import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
 import { UserLoginDtoResponse } from 'src/users/dto/responses/login-user.response';
 import { UsersService } from 'src/users/services/users.service';
 
@@ -28,11 +29,15 @@ export class AuthService {
       );
     }
 
+    const roles: UserRoleEnum[] = userResponse.data.roles.map(
+      (role) => role.role,
+    );
+
     const payload = {
       sub: userResponse.data.id,
       name: userResponse.data.firstName,
       email: userResponse.data.email,
-      role: userResponse.data.role,
+      roles: roles,
     };
 
     const response: UserLoginDtoResponse = {

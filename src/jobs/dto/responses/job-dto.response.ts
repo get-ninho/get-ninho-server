@@ -1,13 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CategoryEnum } from 'src/jobs/common/enums/category.enum';
-import { User } from 'src/users/entities/user.entity';
 
 export class JobDtoResponse {
   @ApiProperty()
   id: number;
 
   @ApiProperty()
-  profisional: User;
+  profisionalId: number;
 
   @ApiProperty()
   description: string;

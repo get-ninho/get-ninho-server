@@ -1,6 +1,13 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { UserRoleEnum } from '../common/enums/user-role.enum';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Job } from 'src/jobs/entities/job.entity';
+import { Role } from './role.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -46,8 +53,14 @@ export class User {
   @Column({ type: 'varchar', length: 50, nullable: true })
   complement?: string;
 
-  @Column({ type: 'enum', enum: UserRoleEnum })
-  role: UserRoleEnum;
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
+  updatedAt: Date;
+
+  @OneToMany(() => Role, (role) => role.user)
+  roles: Role[];
 
   @OneToMany(() => Job, (job) => job.user)
   jobs: Job[];

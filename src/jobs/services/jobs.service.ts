@@ -9,6 +9,7 @@ import { JobDtoResponse } from '../dto/responses/job-dto.response';
 import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
 import { UserDtoResponse } from 'src/users/dto/responses/user-dto.response';
 import { UsersService } from 'src/users/services/users.service';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class JobsService {
@@ -28,7 +29,7 @@ export class JobsService {
       category: dto.category,
       description: dto.description,
       total: dto.total,
-      user: professionalReponse.data,
+      user: professionalReponse.data as unknown as User,
     } as Job;
 
     const response: Job = await this.jobRepository.save(job);
@@ -46,6 +47,9 @@ export class JobsService {
         user: {
           id: userId,
         },
+      },
+      relations: {
+        user: true,
       },
     });
 
@@ -67,13 +71,16 @@ export class JobsService {
           id: userId,
         },
       },
+      relations: {
+        user: true,
+      },
     });
 
     if (!response) {
       return WrapperDtoResponse.emptyWithMetadata(
         HttpStatus.NOT_FOUND,
         getHttpStatusMessage(HttpStatus.NOT_FOUND),
-        'Usuário não localizado.',
+        'Trabalho não localizado.',
       );
     }
 
@@ -88,7 +95,10 @@ export class JobsService {
     user: UserDtoResponse,
     id: number,
   ): Promise<WrapperDtoResponse<void>> {
-    const job = await this.jobRepository.findOne({ where: { id } });
+    const job = await this.jobRepository.findOne({
+      where: { id },
+      relations: { user: true },
+    });
 
     if (user.id !== job.user.id) {
       return WrapperDtoResponse.emptyWithMetadata(
@@ -112,7 +122,7 @@ export class JobsService {
       category: job.category,
       description: job.description,
       id: job.id,
-      profisional: job.user,
+      profisionalId: job.user.id,
       total: job.total,
     };
 

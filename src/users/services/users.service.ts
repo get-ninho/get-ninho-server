@@ -7,12 +7,18 @@ import * as bcrypt from 'bcrypt';
 import { UserDtoResponse } from '../dto/responses/user-dto.response';
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
 import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
+import * as moment from 'moment-timezone';
+import { UserRoleEnum } from '../common/enums/user-role.enum';
+import { Role } from '../entities/role.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @Inject('USER_REPOSITORY')
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
+
+    @Inject('ROLE_REPOSITORY')
+    private readonly roleRepository: Repository<Role>,
   ) {}
 
   public async create(
@@ -33,6 +39,18 @@ export class UsersService {
     const saltOrRounds = 10;
     const hashPass = await bcrypt.hash(dto.password, saltOrRounds);
 
+    if (dto.roles.includes(UserRoleEnum.PRESTADOR)) {
+      dto.roles.push(UserRoleEnum.CLIENTE);
+    }
+
+    const rolesToSave = dto.roles.map((role) => {
+      const newRole = new Role();
+      newRole.role = role;
+      return newRole;
+    });
+
+    const savedRoles = await this.roleRepository.save(rolesToSave);
+
     const newUser: User = {
       bio: dto.bio,
       cpfCnpj: dto.cpfCnpj,
@@ -42,7 +60,7 @@ export class UsersService {
       lastName: dto.lastName,
       password: hashPass,
       rating: dto.rating,
-      role: dto.role,
+      roles: savedRoles,
       address: dto.address,
       city: dto.city,
       state: dto.state,
@@ -60,7 +78,9 @@ export class UsersService {
   }
 
   public async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
-    const users: User[] = await this.userRepository.find();
+    const users: User[] = await this.userRepository.find({
+      relations: { roles: true },
+    });
 
     if (users.length === 0) {
       return WrapperDtoResponse.empty();
@@ -72,7 +92,10 @@ export class UsersService {
   public async findOne(
     id: number,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    const user: User = await this.userRepository.findOne({ where: { id } });
+    const user: User = await this.userRepository.findOne({
+      where: { id },
+      relations: { roles: true },
+    });
 
     if (!user) {
       return WrapperDtoResponse.emptyWithMetadata(
@@ -97,8 +120,10 @@ export class UsersService {
       );
     }
 
-    // Busca o usuário atual
-    const user: User = await this.userRepository.findOne({ where: { id } });
+    const user: User = await this.userRepository.findOne({
+      where: { id },
+      relations: { roles: true },
+    });
 
     if (!user) {
       return WrapperDtoResponse.emptyWithMetadata(
@@ -113,19 +138,23 @@ export class UsersService {
       user.password = await bcrypt.hash(dto.password, saltOrRounds);
     }
 
-    if (dto.firstName) {
-      user.firstName = dto.firstName;
-    }
+    Object.assign(user, dto);
 
     await this.userRepository.save(user);
 
-    const updatedUser = await this.userRepository.findOne({ where: { id } });
+    const updatedUser = await this.userRepository.findOne({
+      where: { id },
+      relations: { roles: true },
+    });
 
     return WrapperDtoResponse.of(this.mapResult(updatedUser));
   }
 
   public async remove(id: number): Promise<WrapperDtoResponse<void>> {
-    const user: User = await this.userRepository.findOne({ where: { id } });
+    const user: User = await this.userRepository.findOne({
+      where: { id },
+      relations: { roles: true },
+    });
 
     if (!user) {
       return WrapperDtoResponse.emptyWithMetadata(
@@ -148,7 +177,10 @@ export class UsersService {
     email: string,
     password: string,
   ): Promise<WrapperDtoResponse<User>> {
-    const user: User = await this.userRepository.findOne({ where: { email } });
+    const user: User = await this.userRepository.findOne({
+      where: { email },
+      relations: { roles: true },
+    });
 
     if (!user) {
       return WrapperDtoResponse.emptyWithMetadata(
@@ -172,13 +204,15 @@ export class UsersService {
   }
 
   private mapResult(user: User): UserDtoResponse {
+    const roles: UserRoleEnum[] = user.roles.map((role) => role.role);
+
     const response: UserDtoResponse = {
       cpfCnpj: user.cpfCnpj,
       email: user.email,
       firstName: user.firstName,
       id: user.id,
       lastName: user.lastName,
-      role: user.role,
+      roles: roles,
       bio: user.bio,
       imageUrl: user.imageUrl,
       rating: user.rating,
@@ -187,6 +221,12 @@ export class UsersService {
       state: user.state,
       addressNumber: user.addressNumber,
       complement: user.complement,
+      createdAt: moment(user.createdAt)
+        .tz('America/Sao_Paulo')
+        .format('DD/MM/YYYY HH:mm:ss'),
+      updatedAt: moment(user.updatedAt)
+        .tz('America/Sao_Paulo')
+        .format('DD/MM/YYYY HH:mm:ss'),
     };
 
     return response;

@@ -13,6 +13,7 @@ export const databaseProviders = [
         database: process.env.DATABASE_NAME,
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         synchronize: true,
+        timezone: 'Z',
         extra: {
           connectionLimit: 10,
           connectTimeout: 10000,

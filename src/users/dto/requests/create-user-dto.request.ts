@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -75,10 +76,14 @@ export class UserDtoRequest {
   @ApiPropertyOptional()
   rating?: number;
 
-  @IsEnum(UserRoleEnum, { message: 'Formato do campo enum inválido' })
+  @IsEnum(UserRoleEnum, {
+    each: true,
+    message: 'Formato do campo enum inválido',
+  })
+  @IsArray({ message: 'Roles é uma lista' })
   @ApiProperty({
     enum: UserRoleEnum,
-    examples: Object.keys(UserRoleEnum),
+    examples: Object.values(UserRoleEnum),
   })
-  role: UserRoleEnum;
+  roles: UserRoleEnum[];
 }

@@ -9,6 +9,8 @@ import {
   UseGuards,
   UseInterceptors,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { JobsService } from '../services/jobs.service';
 import { JobDtoRequest } from '../dto/requests/create-job-dto.request';
@@ -22,6 +24,7 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DatabaseErrorInterceptor } from 'src/common/errors/database-error.interceptor';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
+import { RolesGuard } from 'src/common/guards/role.guard';
 
 @ApiTags('jobs')
 @UseInterceptors(DatabaseErrorInterceptor)
@@ -29,7 +32,7 @@ import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRoleEnum.PRESTADOR)
   @ApiResponse({
     status: 201,
@@ -58,6 +61,12 @@ export class JobsController {
     return this.jobsService.findAll(userId);
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Find job by professional and id',
+    type: UserDtoResponse,
+  })
+  @ApiResponse({ status: 404, description: 'Job not found.' })
   @Get(':id')
   findOne(
     @Query('userId') userId: number,
@@ -66,13 +75,26 @@ export class JobsController {
     return this.jobsService.findOne(userId, +id);
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Update job',
+    type: JobDtoResponse,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @ApiResponse({ status: 404, description: 'Job not found' })
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateJobDto: UpdateJobDtoRequest) {
     return this.jobsService.update(+id, updateJobDto);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRoleEnum.PRESTADOR)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiResponse({
+    status: 204,
+    description: 'Remove job',
+  })
+  @ApiResponse({ status: 404, description: 'Job not found.' })
   @Delete(':id')
   remove(
     @IsPrestador() user: UserDtoResponse,
