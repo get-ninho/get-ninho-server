@@ -135,8 +135,6 @@ export class UsersService {
       throw new BusinessException(metadata);
     }
 
-    console.log(dto);
-
     const user: User = await this.userRepository.findOne({
       where: { id },
       relations: { roles: true },
