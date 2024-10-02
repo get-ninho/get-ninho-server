@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, Max, Min } from 'class-validator';
 
 export class EvaluationDtoRequest {
   @ApiProperty()
@@ -15,6 +15,8 @@ export class EvaluationDtoRequest {
   @ApiProperty()
   @IsNotEmpty({ message: 'Nota de avaliação obrigatório' })
   @IsNumber({}, { message: 'Formato do nota de avaliação de serviço inválido' })
+  @Min(1, { message: 'A nota de avaliação deve ser no mínimo 1' })
+  @Max(5, { message: 'A nota de avaliação deve ser no máximo 5' })
   rating: number;
 
   @ApiProperty()
