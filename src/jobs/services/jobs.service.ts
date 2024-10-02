@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 
 import { Repository } from 'typeorm';
 import { Job } from '../entities/job.entity';
@@ -15,6 +15,8 @@ import { BusinessException } from 'src/common/errors/business-exception.error';
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name);
+
   constructor(
     @Inject('JOB_REPOSITORY')
     private readonly jobRepository: Repository<Job>,
@@ -34,7 +36,9 @@ export class JobsService {
       user: professionalReponse.data as unknown as User,
     } as Job;
 
+    this.logger.log('Saving job on database...');
     const response: Job = await this.jobRepository.save(job);
+    this.logger.log('Saved.');
 
     return WrapperDtoResponse.of(
       this.mapper(response),
@@ -44,6 +48,7 @@ export class JobsService {
   }
 
   async findAll(userId: number): Promise<WrapperDtoResponse<JobDtoResponse[]>> {
+    this.logger.log('Searching all jobs by user...');
     const response: Job[] = await this.jobRepository.find({
       where: {
         user: {
@@ -54,6 +59,7 @@ export class JobsService {
         user: true,
       },
     });
+    this.logger.log('Found.');
 
     if (response.length === 0) {
       return WrapperDtoResponse.empty();
@@ -66,6 +72,7 @@ export class JobsService {
     userId: number,
     id: number,
   ): Promise<WrapperDtoResponse<JobDtoResponse>> {
+    this.logger.log('Finding job by id and user...');
     const response: Job = await this.jobRepository.findOne({
       where: {
         id,
@@ -77,6 +84,7 @@ export class JobsService {
         user: true,
       },
     });
+    this.logger.log('Found.');
 
     if (!response) {
       const metadata = MetadataDtoResponse.of(
@@ -99,10 +107,12 @@ export class JobsService {
     user: UserDtoResponse,
     id: number,
   ): Promise<WrapperDtoResponse<void>> {
+    this.logger.log('Finding job to remove...');
     const job = await this.jobRepository.findOne({
       where: { id },
       relations: { user: true },
     });
+    this.logger.log('Found.');
 
     if (user.id !== job.user.id) {
       const metadata = MetadataDtoResponse.of(
@@ -114,7 +124,9 @@ export class JobsService {
       throw new BusinessException(metadata);
     }
 
+    this.logger.log('Removing job...');
     await this.jobRepository.delete({ id: job.id });
+    this.logger.log('Removed.');
 
     return WrapperDtoResponse.emptyWithMetadata(
       HttpStatus.NO_CONTENT,

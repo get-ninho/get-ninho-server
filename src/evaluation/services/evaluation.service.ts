@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { EvaluationDtoRequest } from '../dto/requests/create-evaluation.dto.request';
 import { UpdateEvaluationDto } from '../dto/requests/update-evaluation.dto';
 import { Evaluation } from '../schemas/evaluation.schema';
@@ -18,6 +18,8 @@ import { BusinessException } from 'src/common/errors/business-exception.error';
 
 @Injectable()
 export class EvaluationService {
+  private readonly logger = new Logger(EvaluationService.name);
+
   constructor(
     @InjectModel(Evaluation.name) private evaluationModel: Model<Evaluation>,
     private readonly userService: UsersService,
@@ -75,17 +77,23 @@ export class EvaluationService {
       rating: dto.rating,
     });
 
-    return WrapperDtoResponse.of(this.mapper(await evaluation.save()));
+    this.logger.log('Saving evaluation...');
+    const evaluate = await evaluation.save();
+    this.logger.log('Saved.');
+
+    return WrapperDtoResponse.of(this.mapper(evaluate));
   }
 
   async findAll(
     professionalId: number,
   ): Promise<WrapperDtoResponse<EvaluationDtoResponse[]>> {
+    this.logger.log('Searching all evaluations by professional...');
     const evaluations = await this.evaluationModel
       .find({
         professional_id: professionalId,
       })
       .exec();
+    this.logger.log('Found.');
 
     if (evaluations.length === 0) {
       return WrapperDtoResponse.empty();
@@ -109,6 +117,7 @@ export class EvaluationService {
       throw new BusinessException(metadata);
     }
 
+    this.logger.log('Updating evaluation...');
     const updatedEvaluation = await this.evaluationModel.findOneAndUpdate(
       {
         _id: id,
@@ -124,6 +133,7 @@ export class EvaluationService {
       },
       { new: true, useFindAndModify: false },
     );
+    this.logger.log('Updated.');
 
     if (!updatedEvaluation) {
       const metadata = MetadataDtoResponse.of(
@@ -135,20 +145,22 @@ export class EvaluationService {
       throw new BusinessException(metadata);
     }
 
-    const averageRating = await this.calculateAverageRating(
-      updatedEvaluation.professional_id,
-      dto.rating,
-    );
+    if (dto.rating) {
+      const averageRating = await this.calculateAverageRating(
+        updatedEvaluation.professional_id,
+        dto.rating,
+      );
 
-    const updateRating: UpdateUserDtoRequest = {
-      rating: averageRating,
-    };
+      const updateRating: UpdateUserDtoRequest = {
+        rating: averageRating,
+      };
 
-    await this.userService.update(
-      updatedEvaluation.professional_id,
-      updateRating,
-      undefined,
-    );
+      await this.userService.update(
+        updatedEvaluation.professional_id,
+        updateRating,
+        undefined,
+      );
+    }
 
     return WrapperDtoResponse.of(this.mapper(updatedEvaluation));
   }
@@ -157,10 +169,12 @@ export class EvaluationService {
     customer: WrapperDtoResponse<UserDtoResponse>,
     id: string,
   ): Promise<WrapperDtoResponse<void>> {
+    this.logger.log('Removing evaluation...');
     const deleteEvaluation = await this.evaluationModel.findOneAndDelete({
       _id: id,
       customer_id: customer.data.id,
     });
+    this.logger.log('Removed.');
 
     if (!deleteEvaluation) {
       const metadata = MetadataDtoResponse.of(

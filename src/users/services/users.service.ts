@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
 import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { Repository } from 'typeorm';
@@ -17,6 +17,8 @@ import { PutObjectCommandInput, PutObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @Inject('USER_REPOSITORY')
     private readonly userRepository: Repository<User>,
@@ -56,10 +58,13 @@ export class UsersService {
       return newRole;
     });
 
+    this.logger.log('Saving roles on database...');
     const savedRoles = await this.roleRepository.save(rolesToSave);
+    this.logger.log('Saved.');
 
-    // Chamando o método privado para fazer o upload da imagem
-    dto.imageUrl = await this.uploadFileToS3(file);
+    if (file) {
+      dto.imageUrl = await this.uploadFileToS3(file);
+    }
 
     const newUser: User = {
       bio: dto.bio,
@@ -78,7 +83,9 @@ export class UsersService {
       complement: dto.complement,
     } as User;
 
+    this.logger.log('Saving user on database...');
     const user: User = await this.userRepository.save(newUser);
+    this.logger.log('Saved.');
 
     return WrapperDtoResponse.of(
       this.mapResult(user),
@@ -88,9 +95,11 @@ export class UsersService {
   }
 
   public async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
+    this.logger.log('Searching user...');
     const users: User[] = await this.userRepository.find({
       relations: { roles: true },
     });
+    this.logger.log('Found.');
 
     if (users.length === 0) {
       return WrapperDtoResponse.empty();
@@ -102,10 +111,12 @@ export class UsersService {
   public async findOne(
     id: number,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
+    this.logger.log('Finding user...');
     const user: User = await this.userRepository.findOne({
       where: { id },
       relations: { roles: true },
     });
+    this.logger.log('Found.');
 
     if (!user) {
       const metadata = MetadataDtoResponse.of(
@@ -135,10 +146,12 @@ export class UsersService {
       throw new BusinessException(metadata);
     }
 
+    this.logger.log('Finding user for update...');
     const user: User = await this.userRepository.findOne({
       where: { id },
       relations: { roles: true },
     });
+    this.logger.log('Found.');
 
     if (!user) {
       const metadata = MetadataDtoResponse.of(
@@ -156,13 +169,14 @@ export class UsersService {
     }
 
     if (file) {
-      // Chamando o método privado para fazer o upload da imagem
       dto.imageUrl = await this.uploadFileToS3(file);
     }
 
     Object.assign(user, dto);
 
+    this.logger.log('Updating user...');
     await this.userRepository.save(user);
+    this.logger.log('Updated.');
 
     const updatedUser = await this.userRepository.findOne({
       where: { id },
@@ -188,7 +202,9 @@ export class UsersService {
       throw new BusinessException(metadata);
     }
 
+    this.logger.log('Removing user with id: ' + user.id);
     await this.userRepository.delete({ id: user.id });
+    this.logger.log('Removed.');
 
     return WrapperDtoResponse.emptyWithMetadata(
       HttpStatus.NO_CONTENT,
@@ -201,10 +217,12 @@ export class UsersService {
     email: string,
     password: string,
   ): Promise<WrapperDtoResponse<User>> {
+    this.logger.log('Finding user by email...');
     const user: User = await this.userRepository.findOne({
       where: { email },
       relations: { roles: true },
     });
+    this.logger.log('Found.');
 
     if (!user) {
       const metadata = MetadataDtoResponse.of(
@@ -261,7 +279,9 @@ export class UsersService {
     };
 
     try {
+      this.logger.log('Processing file in aws...');
       await s3Client.send(new PutObjectCommand(params));
+      this.logger.log('Finished.');
 
       return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
     } catch (err) {
