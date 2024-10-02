@@ -47,6 +47,9 @@ export class UserDtoResponse {
   @ApiProperty()
   updatedAt: string;
 
+  @ApiProperty()
+  phoneNumber: string;
+
   @ApiProperty({
     enum: UserRoleEnum,
     examples: Object.keys(UserRoleEnum),

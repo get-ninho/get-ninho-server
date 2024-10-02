@@ -14,6 +14,7 @@ import { MetadataDtoResponse } from 'src/common/helpers/metadata-dto.response';
 import { BusinessException } from 'src/common/errors/business-exception.error';
 import { s3Client } from 'src/common/aws/aws.config';
 import { PutObjectCommandInput, PutObjectCommand } from '@aws-sdk/client-s3';
+import { Phone } from '../entities/phone.entity';
 
 @Injectable()
 export class UsersService {
@@ -25,6 +26,9 @@ export class UsersService {
 
     @Inject('ROLE_REPOSITORY')
     private readonly roleRepository: Repository<Role>,
+
+    @Inject('PHONE_REPOSITORY')
+    private readonly phoneRepository: Repository<Phone>,
   ) {}
 
   public async create(
@@ -47,6 +51,34 @@ export class UsersService {
 
     const saltOrRounds = 10;
     const hashPass = await bcrypt.hash(dto.password, saltOrRounds);
+
+    const completedPhone: Phone = {
+      internationalCode: parseInt(dto.internationalCode),
+      localCode: parseInt(dto.localCode),
+      phoneNumber: parseInt(dto.phoneNumber),
+    } as Phone;
+
+    const phoneExists = await this.phoneRepository.findOne({
+      where: {
+        internationalCode: completedPhone.internationalCode,
+        localCode: completedPhone.localCode,
+        phoneNumber: completedPhone.phoneNumber,
+      },
+    });
+
+    if (phoneExists) {
+      const metadata = MetadataDtoResponse.of(
+        HttpStatus.CONFLICT,
+        getHttpStatusMessage(HttpStatus.CONFLICT),
+        'Telefone já registrado.',
+      );
+
+      throw new BusinessException(metadata);
+    }
+
+    this.logger.log('Saving phone on database...');
+    const savedPhone = await this.phoneRepository.save(completedPhone);
+    this.logger.log('Saved.');
 
     if (dto.roles.includes(UserRoleEnum.PRESTADOR)) {
       dto.roles.push(UserRoleEnum.CLIENTE);
@@ -81,6 +113,7 @@ export class UsersService {
       state: dto.state,
       addressNumber: JSON.parse(dto.addressNumber),
       complement: dto.complement,
+      phone: savedPhone,
     } as User;
 
     this.logger.log('Saving user on database...');
@@ -313,6 +346,7 @@ export class UsersService {
       updatedAt: moment(user.updatedAt)
         .tz('America/Sao_Paulo')
         .format('DD/MM/YYYY HH:mm:ss'),
+      phoneNumber: `(${user.phone.localCode}) ${user.phone.phoneNumber}`,
     };
 
     return response;

@@ -45,7 +45,7 @@ export class OrdersController {
 
   @ApiResponse({
     status: 200,
-    description: 'Search all service orders',
+    description: 'Search all service orders by customer',
     type: OrderDtoResponse,
   })
   @ApiResponse({ status: 204, description: 'Service orders not found' })
@@ -56,14 +56,35 @@ export class OrdersController {
     return this.ordersService.findAll(user);
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Find service order by customer and order',
+    type: OrderDtoResponse,
+  })
+  @ApiResponse({ status: 404, description: 'Service order not found' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(+id);
+  findOne(
+    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
+    @Param('id') id: string,
+  ): Promise<WrapperDtoResponse<OrderDtoResponse>> {
+    return this.ordersService.findOne(user, +id);
   }
 
+  @ApiResponse({
+    status: 200,
+    description: 'Update order',
+    type: OrderDtoResponse,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(+id, updateOrderDto);
+  update(
+    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Param('id') id: string,
+    @Body() dto: UpdateOrderDto,
+  ): Promise<WrapperDtoResponse<OrderDtoResponse>> {
+    return this.ordersService.update(+id, dto, user, files);
   }
 
   @Delete(':id')

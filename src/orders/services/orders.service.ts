@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { OrderDtoRequest } from '../dto/requests/create-order.dto.request';
 import { UpdateOrderDto } from '../dto/requests/update-order.dto';
 import { ServiceOrder } from '../entities/order.entity';
@@ -25,6 +25,8 @@ import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @Inject('SERVICE_ORDER_REPOSITORY')
     private readonly orderRepository: Repository<ServiceOrder>,
@@ -68,18 +70,23 @@ export class OrdersService {
       throw new BusinessException(job.metadata);
     }
 
+    const paymentStatus: PaymentStatusEnum = PaymentStatusEnum.PENDENTE;
+    //TODO: Chamar método para processar o pagamento aqui e alterar o PaymentStatus
+
     const order: ServiceOrder = {
       customer: user.data as unknown as User,
       job: job.data as unknown as Job,
       professional: professional.data as unknown as User,
       orderStatus: OrderStatusEnum.AGENDADO,
       paymentForm: dto.paymentForm,
-      paymentStatus: PaymentStatusEnum.PENDENTE,
+      paymentStatus: paymentStatus,
       total: job.data.total,
       images: [],
     } as ServiceOrder;
 
+    this.logger.log('Saving service order on database...');
     const savedOrder: ServiceOrder = await this.orderRepository.save(order);
+    this.logger.log('Saved.');
 
     if (files.length > 0) {
       const imagesUrls: string[] = await this.uploadFilesToS3(files);
@@ -90,6 +97,7 @@ export class OrdersService {
           serviceOrder: savedOrder,
         } as Image;
 
+        this.logger.log('Saving service order images on database...');
         return this.imageRepository.save(image);
       });
 
@@ -113,6 +121,7 @@ export class OrdersService {
     user: WrapperDtoResponse<UserDtoResponse>,
   ): Promise<WrapperDtoResponse<OrderDtoResponse[]>> {
     if (user.data.roles.includes(UserRoleEnum.PRESTADOR)) {
+      this.logger.log('Searhing all service orders by professional...');
       const orders: ServiceOrder[] = await this.orderRepository.find({
         where: {
           professional: {
@@ -121,10 +130,13 @@ export class OrdersService {
         },
       });
 
+      this.logger.log('Found.');
+
       return WrapperDtoResponse.of(
         orders.map((order) => this.mapResult(order)),
       );
     } else {
+      this.logger.log('Searhing all service orders by customer...');
       const orders: ServiceOrder[] = await this.orderRepository.find({
         where: {
           customer: {
@@ -138,6 +150,7 @@ export class OrdersService {
           professional: true,
         },
       });
+      this.logger.log('Found.');
 
       return WrapperDtoResponse.of(
         orders.map((order) => this.mapResult(order)),
@@ -145,12 +158,100 @@ export class OrdersService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async findOne(
+    user: WrapperDtoResponse<UserDtoResponse>,
+    id: number,
+  ): Promise<WrapperDtoResponse<OrderDtoResponse>> {
+    this.logger.log('Finding service order by user and id...');
+    const order: ServiceOrder = await this.orderRepository.findOne({
+      where: {
+        id,
+        customer: {
+          id: user.data.id,
+        },
+      },
+      relations: {
+        customer: true,
+        professional: true,
+        images: true,
+        job: true,
+      },
+    });
+    this.logger.log('Found.');
+
+    return WrapperDtoResponse.of(this.mapResult(order));
   }
 
-  update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
+  async update(
+    id: number,
+    dto: UpdateOrderDto,
+    user: WrapperDtoResponse<UserDtoResponse>,
+    files: Array<Express.Multer.File>,
+  ): Promise<WrapperDtoResponse<OrderDtoResponse>> {
+    this.logger.log('Finding service order by user and id...');
+    const order: ServiceOrder = await this.orderRepository.findOne({
+      where: {
+        id,
+        customer: {
+          id: user.data.id,
+        },
+      },
+      relations: {
+        customer: true,
+        professional: true,
+        images: true,
+        job: true,
+      },
+    });
+    this.logger.log('Found.');
+
+    if (!order) {
+      const metadata = MetadataDtoResponse.of(
+        HttpStatus.FORBIDDEN,
+        getHttpStatusMessage(HttpStatus.FORBIDDEN),
+        'Você não tem permissão para finalizar este serviço.',
+      );
+
+      throw new BusinessException(metadata);
+    }
+
+    if (!order.finishedDate) {
+      order.finishedDate = new Date();
+    }
+
+    if (files.length > 0) {
+      const imagesUrls: string[] = await this.uploadFilesToS3(files);
+
+      const imagesToSave = imagesUrls.map((url) => {
+        const image: Image = {
+          imageUrl: url,
+          serviceOrder: order,
+        } as Image;
+
+        this.logger.log('Saving service order images on database...');
+        return this.imageRepository.save(image);
+      });
+
+      await Promise.all(imagesToSave);
+    }
+
+    Object.assign(order, dto);
+
+    this.logger.log('Updating order...');
+    const savedOrder: ServiceOrder = await this.orderRepository.save(order);
+    this.logger.log('Updated.');
+
+    const completeOrder = await this.orderRepository.findOne({
+      where: { id: savedOrder.id },
+      relations: {
+        images: true,
+        customer: true,
+        professional: true,
+        job: true,
+      },
+    });
+
+    return WrapperDtoResponse.of(this.mapResult(completeOrder));
   }
 
   remove(id: number) {
@@ -185,13 +286,15 @@ export class OrdersService {
 
       const params: PutObjectCommandInput = {
         Bucket: process.env.AWS_S3_BUCKET_NAME!,
-        Key: `images/profile/${Date.now()}_${file.originalname}`,
+        Key: `images/works/${Date.now()}_${file.originalname}`,
         Body: file.buffer,
         ContentType: file.mimetype,
       };
 
       try {
+        this.logger.log('Processing file in aws...');
         await s3Client.send(new PutObjectCommand(params));
+        this.logger.log('Finished.');
 
         const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
         uploadedFileUrls.push(fileUrl);

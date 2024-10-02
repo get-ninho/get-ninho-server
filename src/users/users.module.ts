@@ -5,11 +5,17 @@ import { DatabaseModule } from 'src/database/database.module';
 import { userRepository } from './repositories/user.repository';
 import { AuthModule } from 'src/auth/auth.module';
 import { roleRepository } from './repositories/role.repository';
+import { phoneRepository } from './repositories/phone.repository';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
   controllers: [UsersController],
-  providers: [...userRepository, ...roleRepository, UsersService],
-  exports: [...userRepository, ...roleRepository],
+  providers: [
+    ...userRepository,
+    ...roleRepository,
+    ...phoneRepository,
+    UsersService,
+  ],
+  exports: [...userRepository, ...roleRepository, ...phoneRepository],
 })
 export class UsersModule {}

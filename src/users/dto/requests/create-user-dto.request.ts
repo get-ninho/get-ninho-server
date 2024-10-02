@@ -46,15 +46,30 @@ export class UserDtoRequest {
   @ApiProperty()
   city: string;
 
-  @IsNotEmpty({ message: 'Endereço obrigatória' })
+  @IsNotEmpty({ message: 'Endereço obrigatório' })
   @IsString({ message: 'Formato do campo endereço inválido' })
   @ApiProperty()
   address: string;
 
-  @IsNotEmpty({ message: 'Numero do endereço obrigatória' })
+  @IsNotEmpty({ message: 'Numero do endereço obrigatório' })
   @IsString({ message: 'Formato do numero do endereço inválido' })
   @ApiProperty()
   addressNumber: string;
+
+  @IsNotEmpty({ message: 'Código internacional obrigatório' })
+  @IsString({ message: 'Formato do código internacional inválido' })
+  @ApiProperty()
+  internationalCode: string;
+
+  @IsNotEmpty({ message: 'DDD obrigatório' })
+  @IsString({ message: 'Formato do DDD inválido' })
+  @ApiProperty()
+  localCode: string;
+
+  @IsNotEmpty({ message: 'Número de telefone obrigatório' })
+  @IsString({ message: 'Formato do número de telefone inválido' })
+  @ApiProperty()
+  phoneNumber: string;
 
   @IsOptional()
   @IsString({ message: 'Formato do campo complemento inválido' })

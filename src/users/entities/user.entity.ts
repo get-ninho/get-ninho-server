@@ -3,12 +3,14 @@ import {
   CreateDateColumn,
   Entity,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Job } from 'src/jobs/entities/job.entity';
 import { Role } from './role.entity';
 import { ServiceOrder } from 'src/orders/entities/order.entity';
+import { Phone } from './phone.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -62,6 +64,9 @@ export class User {
 
   @OneToMany(() => Role, (role) => role.user)
   roles: Role[];
+
+  @OneToOne(() => Phone, (phone) => phone.user)
+  phone: Phone;
 
   @OneToMany(() => Job, (job) => job.user)
   jobs: Job[];
