@@ -1,4 +1,10 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { EvaluationDtoRequest } from '../dto/requests/create-evaluation.dto.request';
 import { UpdateEvaluationDto } from '../dto/requests/update-evaluation.dto';
 import { Evaluation } from '../schemas/evaluation.schema';
@@ -23,6 +29,8 @@ export class EvaluationService {
 
   constructor(
     @InjectModel(Evaluation.name) private evaluationModel: Model<Evaluation>,
+
+    @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
     private readonly jobService: JobsService,
   ) {}
@@ -221,6 +229,32 @@ export class EvaluationService {
       getHttpStatusMessage(HttpStatus.NO_CONTENT),
       null,
     );
+  }
+
+  async removeAll(id: number): Promise<void> {
+    const evaluations = await this.evaluationModel.find({
+      professional_id: id,
+    });
+
+    if (!evaluations || evaluations.length === 0) {
+      return;
+    }
+
+    await this.evaluationModel.deleteMany({
+      professional_id: id,
+    });
+
+    const totalRating = evaluations.reduce(
+      (acc, evaluation) => acc + evaluation.rating,
+      0,
+    );
+    const averageRating = totalRating / evaluations.length;
+
+    const updateRating: UpdateUserDtoRequest = {
+      rating: averageRating,
+    };
+
+    await this.userService.update(id, updateRating, undefined);
   }
 
   private mapper(evaluation: Evaluation): EvaluationDtoResponse {

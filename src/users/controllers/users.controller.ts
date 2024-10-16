@@ -60,7 +60,6 @@ export class UsersController {
     return this.usersService.findAll(page, size);
   }
 
-  @UseGuards(AuthGuard)
   @ApiResponse({
     status: 200,
     description: 'Search user by id',
@@ -85,11 +84,11 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('image'))
   @Patch()
   update(
-    @IsCustomer() user: UserDtoResponse,
+    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
     @UploadedFile() image: Express.Multer.File,
     @Body() updateUserDto: UpdateUserDtoRequest,
   ): Promise<WrapperDtoResponse<UserDtoResponse>> {
-    return this.usersService.update(user.id, updateUserDto, image);
+    return this.usersService.update(user.data.id, updateUserDto, image);
   }
 
   @UseGuards(AuthGuard)
@@ -101,8 +100,8 @@ export class UsersController {
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
-    @IsCustomer() user: UserDtoResponse,
+    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
   ): Promise<WrapperDtoResponse<void>> {
-    return this.usersService.remove(user.id);
+    return this.usersService.remove(user.data.id);
   }
 }

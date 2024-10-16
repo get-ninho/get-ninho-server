@@ -1,4 +1,10 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 
 import { Repository } from 'typeorm';
 import { Job } from '../entities/job.entity';
@@ -21,6 +27,8 @@ export class JobsService {
   constructor(
     @Inject('JOB_REPOSITORY')
     private readonly jobRepository: Repository<Job>,
+
+    @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
   ) {}
 
@@ -121,7 +129,7 @@ export class JobsService {
   }
 
   async remove(
-    user: UserDtoResponse,
+    user: WrapperDtoResponse<UserDtoResponse>,
     id: number,
   ): Promise<WrapperDtoResponse<void>> {
     this.logger.log('Finding job to remove...');
@@ -131,7 +139,7 @@ export class JobsService {
     });
     this.logger.log('Found.');
 
-    if (user.id !== job.user.id) {
+    if (user.data.id !== job.user.id) {
       const metadata = MetadataDtoResponse.of(
         HttpStatus.FORBIDDEN,
         getHttpStatusMessage(HttpStatus.FORBIDDEN),

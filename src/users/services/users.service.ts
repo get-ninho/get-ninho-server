@@ -1,4 +1,10 @@
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { UserDtoRequest } from '../dto/requests/create-user-dto.request';
 import { UpdateUserDtoRequest } from '../dto/requests/update-user-dto.request';
 import { Repository } from 'typeorm';
@@ -16,6 +22,7 @@ import { s3Client } from 'src/common/aws/aws.config';
 import { PutObjectCommandInput, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Phone } from '../entities/phone.entity';
 import { PaginationDtoResponse } from 'src/common/helpers/pagination-dto.response';
+import { EvaluationService } from 'src/evaluation/services/evaluation.service';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +37,9 @@ export class UsersService {
 
     @Inject('PHONE_REPOSITORY')
     private readonly phoneRepository: Repository<Phone>,
+
+    @Inject(forwardRef(() => EvaluationService))
+    private readonly evaluationService: EvaluationService,
   ) {}
 
   public async create(
@@ -251,11 +261,21 @@ export class UsersService {
       throw new BusinessException(metadata);
     }
 
+    this.logger.log('Removing all user reviews with id: ' + user.id);
+    await this.evaluationService.removeAll(user.id);
+    this.logger.log('Removed.');
+
+    this.logger.log('Removing all user roles with id: ' + user.id);
+    this.roleRepository.delete({ user: user });
+    this.logger.log('Removed.');
+
+    this.logger.log('Removing all user phones with id: ' + user.id);
+    this.phoneRepository.delete({ user: user });
+    this.logger.log('Removed.');
+
     this.logger.log('Removing user with id: ' + user.id);
     await this.userRepository.delete({ id: user.id });
     this.logger.log('Removed.');
-
-    //TODO: Remover as avaliações do usuário também
 
     return WrapperDtoResponse.emptyWithMetadata(
       HttpStatus.NO_CONTENT,

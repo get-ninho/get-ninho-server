@@ -29,6 +29,7 @@ export class AuthGuard implements CanActivate {
 
       if (data.roles.includes(UserRoleEnum.PRESTADOR)) {
         request.prestador = await this.userService.findOne(data.sub);
+        request.customer = await this.userService.findOne(data.sub);
       }
 
       request.payload = data;

@@ -99,7 +99,7 @@ export class JobsController {
   @ApiResponse({ status: 404, description: 'Job not found.' })
   @Delete(':id')
   remove(
-    @IsPrestador() user: UserDtoResponse,
+    @IsPrestador() user: WrapperDtoResponse<UserDtoResponse>,
     @Param('id') id: string,
   ): Promise<WrapperDtoResponse<void>> {
     return this.jobsService.remove(user, +id);
