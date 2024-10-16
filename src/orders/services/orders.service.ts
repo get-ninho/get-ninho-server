@@ -22,6 +22,7 @@ import { PaymentStatusEnum } from '../common/enums/payment-status.enum';
 import { Job } from 'src/jobs/entities/job.entity';
 import { User } from 'src/users/entities/user.entity';
 import { UserRoleEnum } from 'src/users/common/enums/user-role.enum';
+import { PaginationDtoResponse } from 'src/common/helpers/pagination-dto.response';
 
 @Injectable()
 export class OrdersService {
@@ -119,25 +120,37 @@ export class OrdersService {
 
   async findAll(
     user: WrapperDtoResponse<UserDtoResponse>,
+    page: number,
+    limit: number,
   ): Promise<WrapperDtoResponse<OrderDtoResponse[]>> {
     if (user.data.roles.includes(UserRoleEnum.PRESTADOR)) {
-      this.logger.log('Searhing all service orders by professional...');
-      const orders: ServiceOrder[] = await this.orderRepository.find({
+      this.logger.log('Searching all service orders by professional...');
+
+      const [orders, total] = await this.orderRepository.findAndCount({
         where: {
           professional: {
             id: user.data.id,
           },
         },
+        take: limit,
+        skip: (page - 1) * limit,
       });
 
       this.logger.log('Found.');
 
+      const pagination = PaginationDtoResponse.of(limit, page, total);
+
       return WrapperDtoResponse.of(
         orders.map((order) => this.mapResult(order)),
+        HttpStatus.OK,
+        getHttpStatusMessage(HttpStatus.OK),
+        undefined,
+        pagination,
       );
     } else {
-      this.logger.log('Searhing all service orders by customer...');
-      const orders: ServiceOrder[] = await this.orderRepository.find({
+      this.logger.log('Searching all service orders by customer...');
+
+      const [orders, total] = await this.orderRepository.findAndCount({
         where: {
           customer: {
             id: user.data.id,
@@ -149,11 +162,20 @@ export class OrdersService {
           images: true,
           professional: true,
         },
+        take: limit,
+        skip: (page - 1) * limit,
       });
+
       this.logger.log('Found.');
+
+      const pagination = PaginationDtoResponse.of(limit, page, total);
 
       return WrapperDtoResponse.of(
         orders.map((order) => this.mapResult(order)),
+        HttpStatus.OK,
+        getHttpStatusMessage(HttpStatus.OK),
+        undefined,
+        pagination,
       );
     }
   }

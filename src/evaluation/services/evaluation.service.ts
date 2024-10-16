@@ -15,6 +15,7 @@ import { getHttpStatusMessage } from 'src/common/helpers/http-status.mesage';
 import * as moment from 'moment-timezone';
 import { MetadataDtoResponse } from 'src/common/helpers/metadata-dto.response';
 import { BusinessException } from 'src/common/errors/business-exception.error';
+import { PaginationDtoResponse } from 'src/common/helpers/pagination-dto.response';
 
 @Injectable()
 export class EvaluationService {
@@ -86,20 +87,36 @@ export class EvaluationService {
 
   async findAll(
     professionalId: number,
+    page: number,
+    limit: number,
   ): Promise<WrapperDtoResponse<EvaluationDtoResponse[]>> {
     this.logger.log('Searching all evaluations by professional...');
-    const evaluations = await this.evaluationModel
-      .find({
-        professional_id: professionalId,
-      })
+
+    const total = await this.evaluationModel
+      .countDocuments({ professional_id: professionalId })
       .exec();
+
+    const evaluations = await this.evaluationModel
+      .find({ professional_id: professionalId })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+
     this.logger.log('Found.');
 
     if (evaluations.length === 0) {
       return WrapperDtoResponse.empty();
     }
 
-    return WrapperDtoResponse.of(evaluations.map((e) => this.mapper(e)));
+    const pagination = PaginationDtoResponse.of(limit, page, total);
+
+    return WrapperDtoResponse.of(
+      evaluations.map((e) => this.mapper(e)),
+      HttpStatus.OK,
+      getHttpStatusMessage(HttpStatus.OK),
+      undefined,
+      pagination,
+    );
   }
 
   async update(
@@ -221,19 +238,29 @@ export class EvaluationService {
     return response;
   }
 
+  private async findAllWithoutPagination(
+    professionalId: number,
+  ): Promise<EvaluationDtoResponse[]> {
+    const evaluations = await this.evaluationModel
+      .find({ professional_id: professionalId })
+      .exec();
+
+    return evaluations.map((e) => this.mapper(e));
+  }
+
   private async calculateAverageRating(
     professionalId: number,
     newRating: number,
   ): Promise<number> {
-    const allEvaluations = await this.findAll(professionalId);
+    const allEvaluations = await this.findAllWithoutPagination(professionalId);
 
-    const totalRatings = allEvaluations.data.reduce(
+    const totalRatings = allEvaluations.reduce(
       (acc, evaluation) => acc + evaluation.rating,
       0,
     );
 
     const newTotalRatings = totalRatings + newRating;
-    const numberOfRatings = allEvaluations.data.length + 1;
+    const numberOfRatings = allEvaluations.length + 1;
 
     return Math.min(Math.max(newTotalRatings / numberOfRatings, 1), 5);
   }

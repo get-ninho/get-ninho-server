@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UploadedFile,
   Param,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
 
@@ -52,8 +53,11 @@ export class UsersController {
   })
   @ApiResponse({ status: 204, description: 'Users not found' })
   @Get()
-  findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
-    return this.usersService.findAll();
+  findAll(
+    @Query('page') page: number = 1,
+    @Query('size') size: number = 10,
+  ): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
+    return this.usersService.findAll(page, size);
   }
 
   @UseGuards(AuthGuard)

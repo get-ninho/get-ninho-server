@@ -12,6 +12,7 @@ import { UsersService } from 'src/users/services/users.service';
 import { User } from 'src/users/entities/user.entity';
 import { MetadataDtoResponse } from 'src/common/helpers/metadata-dto.response';
 import { BusinessException } from 'src/common/errors/business-exception.error';
+import { PaginationDtoResponse } from 'src/common/helpers/pagination-dto.response';
 
 @Injectable()
 export class JobsService {
@@ -25,9 +26,11 @@ export class JobsService {
 
   async create(
     dto: JobDtoRequest,
-    professional: UserDtoResponse,
+    professional: WrapperDtoResponse<UserDtoResponse>,
   ): Promise<WrapperDtoResponse<JobDtoResponse>> {
-    const professionalReponse = await this.userService.findOne(professional.id);
+    const professionalReponse = await this.userService.findOne(
+      professional.data.id,
+    );
 
     const job: Job = {
       category: dto.category,
@@ -47,9 +50,13 @@ export class JobsService {
     );
   }
 
-  async findAll(userId: number): Promise<WrapperDtoResponse<JobDtoResponse[]>> {
+  async findAll(
+    userId: number,
+    page: number,
+    limit: number,
+  ): Promise<WrapperDtoResponse<JobDtoResponse[]>> {
     this.logger.log('Searching all jobs by user...');
-    const response: Job[] = await this.jobRepository.find({
+    const [response, total] = await this.jobRepository.findAndCount({
       where: {
         user: {
           id: userId,
@@ -58,6 +65,8 @@ export class JobsService {
       relations: {
         user: true,
       },
+      take: limit,
+      skip: (page - 1) * limit,
     });
     this.logger.log('Found.');
 
@@ -65,7 +74,15 @@ export class JobsService {
       return WrapperDtoResponse.empty();
     }
 
-    return WrapperDtoResponse.of(response.map((job) => this.mapper(job)));
+    const pagination = PaginationDtoResponse.of(limit, page, total);
+
+    return WrapperDtoResponse.of(
+      response.map((job) => this.mapper(job)),
+      HttpStatus.OK,
+      getHttpStatusMessage(HttpStatus.OK),
+      undefined,
+      pagination,
+    );
   }
 
   async findOne(

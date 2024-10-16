@@ -20,7 +20,10 @@ export class AuthGuard implements CanActivate {
         (authorization ?? '').split(' ')[1],
       );
 
-      if (data.roles.includes(UserRoleEnum.CLIENTE)) {
+      if (
+        data.roles.includes(UserRoleEnum.CLIENTE) &&
+        !data.roles.includes(UserRoleEnum.PRESTADOR)
+      ) {
         request.customer = await this.userService.findOne(data.sub);
       }
 
@@ -32,7 +35,8 @@ export class AuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      false;
+      console.error('Error in token validation:', error);
+      return false;
     }
   }
 }

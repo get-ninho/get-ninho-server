@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { OrdersService } from '../services/orders.service';
 import { OrderDtoRequest } from '../dto/requests/create-order.dto.request';
@@ -52,8 +53,10 @@ export class OrdersController {
   @Get()
   findAll(
     @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
+    @Query('page') page: number = 1,
+    @Query('size') size: number = 10,
   ): Promise<WrapperDtoResponse<OrderDtoResponse[]>> {
-    return this.ordersService.findAll(user);
+    return this.ordersService.findAll(user, page, size);
   }
 
   @ApiResponse({

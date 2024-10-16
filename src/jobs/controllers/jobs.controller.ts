@@ -42,7 +42,7 @@ export class JobsController {
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @Post()
   create(
-    @IsPrestador() user: UserDtoResponse,
+    @IsPrestador() user: WrapperDtoResponse<UserDtoResponse>,
     @Body() createJobDto: JobDtoRequest,
   ): Promise<WrapperDtoResponse<JobDtoResponse>> {
     return this.jobsService.create(createJobDto, user);
@@ -57,8 +57,10 @@ export class JobsController {
   @Get()
   findAll(
     @Query('userId') userId: number,
+    @Query('page') page: number = 1,
+    @Query('size') size: number = 10,
   ): Promise<WrapperDtoResponse<JobDtoResponse[]>> {
-    return this.jobsService.findAll(userId);
+    return this.jobsService.findAll(userId, page, size);
   }
 
   @ApiResponse({

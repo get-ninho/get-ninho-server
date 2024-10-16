@@ -15,6 +15,7 @@ import { BusinessException } from 'src/common/errors/business-exception.error';
 import { s3Client } from 'src/common/aws/aws.config';
 import { PutObjectCommandInput, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Phone } from '../entities/phone.entity';
+import { PaginationDtoResponse } from 'src/common/helpers/pagination-dto.response';
 
 @Injectable()
 export class UsersService {
@@ -127,18 +128,33 @@ export class UsersService {
     );
   }
 
-  public async findAll(): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
+  public async findAll(
+    page: number,
+    limit: number,
+  ): Promise<WrapperDtoResponse<UserDtoResponse[]>> {
     this.logger.log('Searching user...');
-    const users: User[] = await this.userRepository.find({
-      relations: { roles: true },
+
+    const [users, total] = await this.userRepository.findAndCount({
+      relations: { roles: true, phone: true },
+      take: limit,
+      skip: (page - 1) * limit,
     });
+
     this.logger.log('Found.');
 
     if (users.length === 0) {
       return WrapperDtoResponse.empty();
     }
 
-    return WrapperDtoResponse.of(users.map((user) => this.mapResult(user)));
+    const pagination = PaginationDtoResponse.of(limit, page, total);
+
+    return WrapperDtoResponse.of(
+      users.map((user) => this.mapResult(user)),
+      HttpStatus.OK,
+      getHttpStatusMessage(HttpStatus.OK),
+      undefined,
+      pagination,
+    );
   }
 
   public async findOne(
@@ -147,7 +163,7 @@ export class UsersService {
     this.logger.log('Finding user...');
     const user: User = await this.userRepository.findOne({
       where: { id },
-      relations: { roles: true },
+      relations: { roles: true, phone: true },
     });
     this.logger.log('Found.');
 
@@ -182,7 +198,7 @@ export class UsersService {
     this.logger.log('Finding user for update...');
     const user: User = await this.userRepository.findOne({
       where: { id },
-      relations: { roles: true },
+      relations: { roles: true, phone: true },
     });
     this.logger.log('Found.');
 
@@ -213,7 +229,7 @@ export class UsersService {
 
     const updatedUser = await this.userRepository.findOne({
       where: { id },
-      relations: { roles: true },
+      relations: { roles: true, phone: true },
     });
 
     return WrapperDtoResponse.of(this.mapResult(updatedUser));
@@ -222,7 +238,7 @@ export class UsersService {
   public async remove(id: number): Promise<WrapperDtoResponse<void>> {
     const user: User = await this.userRepository.findOne({
       where: { id },
-      relations: { roles: true },
+      relations: { roles: true, phone: true },
     });
 
     if (!user) {
@@ -239,6 +255,8 @@ export class UsersService {
     await this.userRepository.delete({ id: user.id });
     this.logger.log('Removed.');
 
+    //TODO: Remover as avaliações do usuário também
+
     return WrapperDtoResponse.emptyWithMetadata(
       HttpStatus.NO_CONTENT,
       getHttpStatusMessage(HttpStatus.NO_CONTENT),
@@ -253,7 +271,7 @@ export class UsersService {
     this.logger.log('Finding user by email...');
     const user: User = await this.userRepository.findOne({
       where: { email },
-      relations: { roles: true },
+      relations: { roles: true, phone: true },
     });
     this.logger.log('Found.');
 

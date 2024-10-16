@@ -50,8 +50,10 @@ export class EvaluationController {
   @Get()
   findAll(
     @Query('professionalId') professionalId: number,
+    @Query('page') page: number = 1,
+    @Query('size') size: number = 10,
   ): Promise<WrapperDtoResponse<EvaluationDtoResponse[]>> {
-    return this.evaluationService.findAll(professionalId);
+    return this.evaluationService.findAll(professionalId, page, size);
   }
 
   @UseGuards(AuthGuard)
