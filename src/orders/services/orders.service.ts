@@ -132,6 +132,12 @@ export class OrdersService {
             id: user.data.id,
           },
         },
+        relations: {
+          customer: true,
+          job: true,
+          images: true,
+          professional: true,
+        },
         take: limit,
         skip: (page - 1) * limit,
       });

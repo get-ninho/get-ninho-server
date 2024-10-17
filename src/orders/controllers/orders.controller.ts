@@ -21,6 +21,7 @@ import { IsCustomer } from 'src/common/decorators/customer.decorator';
 import { UserDtoResponse } from 'src/users/dto/responses/user-dto.response';
 import { WrapperDtoResponse } from 'src/common/helpers/wrapper-dto.response';
 import { OrderDtoResponse } from '../dto/responses/order.dto.response';
+import { IsPrestador } from 'src/common/decorators/prestador.decorator';
 
 @ApiTags('Orders Service')
 @UseGuards(AuthGuard)
@@ -37,7 +38,7 @@ export class OrdersController {
   @UseInterceptors(FilesInterceptor('images', 8))
   @Post()
   create(
-    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
+    @IsPrestador() user: WrapperDtoResponse<UserDtoResponse>,
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body() dto: OrderDtoRequest,
   ): Promise<WrapperDtoResponse<OrderDtoResponse>> {
@@ -80,9 +81,10 @@ export class OrdersController {
   })
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @ApiResponse({ status: 404, description: 'Order not found' })
+  @UseInterceptors(FilesInterceptor('images', 8))
   @Patch(':id')
   update(
-    @IsCustomer() user: WrapperDtoResponse<UserDtoResponse>,
+    @IsPrestador() user: WrapperDtoResponse<UserDtoResponse>,
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Param('id') id: string,
     @Body() dto: UpdateOrderDto,
